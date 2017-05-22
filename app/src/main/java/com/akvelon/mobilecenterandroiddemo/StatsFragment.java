@@ -186,7 +186,11 @@ public class StatsFragment extends Fragment implements View.OnClickListener, Rad
         // first timestamp in our data set, other timestamps will be relative to this
         // see https://github.com/PhilJay/MPAndroidChart/issues/789#issuecomment-241507904
         long referenceTimestamp = mFitnessDataList.get(0).getDate().getTime();
-        List<Entry> values = getEntryValues(mFitnessDataList, mSelectedFitnessType, referenceTimestamp);
+
+        final long MS_IN_DAY = 86400000;
+        long widthValue = mFitnessDataList.get(mFitnessDataList.size() - 1).getDate().getTime() - referenceTimestamp;
+        long widthScale = widthValue + MS_IN_DAY;
+        List<Entry> values = getEntryValues(mFitnessDataList, mSelectedFitnessType, referenceTimestamp, widthScale, widthValue);
 
         // create a data with values
         LineDataSet dataSet = lineDataSet(values);
@@ -196,7 +200,10 @@ public class StatsFragment extends Fragment implements View.OnClickListener, Rad
         // configure x axis to show dates
         // see https://github.com/PhilJay/MPAndroidChart/issues/789#issuecomment-241507904
         configureXAxisFormatter(referenceTimestamp);
+        mChart.getXAxis().setLabelCount(values.size());
 
+        mChart.getXAxis().setAxisMinimum(values.get(0).getX());
+        mChart.getXAxis().setAxisMaximum(widthScale);
         // do not show negative values
         mChart.getAxisLeft().setAxisMinimum(0f);
 
@@ -205,10 +212,10 @@ public class StatsFragment extends Fragment implements View.OnClickListener, Rad
         mChart.invalidate();
     }
 
-    private List<Entry> getEntryValues(List<FitnessData> fitnessDataList, FitnessDataType fitnessType, long referenceTimestamp) {
+    private List<Entry> getEntryValues(List<FitnessData> fitnessDataList, FitnessDataType fitnessType, long referenceTimestamp, float widthScale, float widthValue) {
         ArrayList<Entry> values = new ArrayList<Entry>();
         for (FitnessData fitnessData : fitnessDataList) {
-            float x = fitnessData.getDate().getTime() - referenceTimestamp;
+            float x = ((float)(fitnessData.getDate().getTime() - referenceTimestamp) / widthValue) * widthScale;
             float y = (float)getAppropriateFitnessValue(fitnessData, fitnessType);
             values.add(new Entry(x, y));
         }
